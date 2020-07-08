@@ -1,0 +1,333 @@
+.card {
+    position: absolute;
+    right: -100%;
+    bottom: 5%;
+    width: 332px;
+    max-width: 100%;
+    height: auto;
+    box-shadow: 3px 11px 20px rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    background: linear-gradient(161.2deg, #FFFFFF 3.69%, #FFFFFF 91.98%);
+    padding: 16px;
+    transition: 0.6s all linear;
+    overflow: hidden;
+}
+
+.show {
+    right: 3%;
+}
+
+.card-header {
+    text-align: center;
+}
+
+.card-header .header-text {
+    font-family: Gilroy;
+    font-style: normal;
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 14px;
+}
+
+.card .hide {
+    width: 1em;
+    height: 1em;
+    font-size: 2rem;
+    float: right;
+    cursor: pointer;
+    position: relative;
+}
+
+.hide .tooltiptext {
+    display: none;
+    width: 120px;
+    background-color: rgb(29, 30, 30);
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px 0;
+    position: absolute;
+    z-index: 1;
+    top: 110%;
+    right: -10%;
+    font-size: 14px;
+}
+  
+.hide .tooltiptext::after {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    right: 15%;
+    margin-right: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent transparent rgb(29, 30, 30) transparent;
+}
+  
+.hide:hover .tooltiptext {
+    display: block;
+}
+
+.clearfix {
+    clear: both;
+}
+
+.card-header svg {
+    display: block;
+    margin: 5px auto;
+}
+
+.navbar {
+    background-color: #F7F9FA;
+    border-radius: 3px;
+    padding: 3px 4px;
+    margin: 20px auto 0 auto;
+    width: 100%;
+}
+
+.navbar ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+.navbar ul li {
+    display: inline-block;
+    padding: 14px 15px;
+    width: 33%;
+    text-align: center;
+    cursor: pointer;
+    border-radius: 3px;
+    font-family: Gilroy;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 14px;
+    letter-spacing: 0.03em;
+    color: #5F5F5F;
+}
+
+.navbar ul li.active {
+    background-color: #E0E8FF;
+}
+
+.navbar ul li:hover {
+    background-color: rgb(203, 213, 239);
+}
+
+.currencies {
+    display: flex;
+    width: 100%;
+    margin: 0 auto 8px auto;
+    padding: 3px 4px;
+    background-color: #F7F9FA;
+    border-radius: 4px;
+    outline: 0px;
+}
+/* 
+.card-body {
+    height: 240px;
+} */
+
+.card-body input {
+    width: 100%;
+    padding: 20px 30px;
+    margin: 10px auto;
+    border: 0px solid;
+    background-color: #F7F9FA;
+    border-radius: 4px;
+    outline: 0px;
+    font-family: Gilroy;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 14px;
+    letter-spacing: 0.03em;
+    color: #5F5F5F;
+}
+
+.currencies input {
+    width: 75%;
+    padding: 12px 24px;
+    /* border: 0px solid; */
+    background-color: transparent;
+    margin: 0;
+    border-radius: 0;
+    /* font-size: 1em;
+    outline: 0px; */
+}
+
+.currencies div {
+    display: flex;
+    border: 0px solid;
+    border-radius: 3px;
+    padding: 5px;
+    width: 25%;
+    background-color: #E0E8FF;
+    outline: 0px;
+    font-family: Gilroy;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 14px;
+    justify-content: center;
+    align-items: center;
+    letter-spacing: 0.03em;
+    color: #5F5F5F;
+    background-image: url(../../images/Vector\ 20.png);
+    background-repeat: no-repeat;
+    background-position: 85%;
+    cursor: pointer;
+}
+
+.currencies div:hover {
+    background-color: #3463F8;
+    color: #FFFFFF;
+    background-image: url(../../images/Vector\ 19.png);
+}
+
+.currencies select {
+    border: 0px solid;
+    border-radius: 3px;
+    padding: 5px;
+    width: 25%;
+    background-color: #E0E8FF;
+    outline: 0px;
+    font-family: Gilroy;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 14px;
+    letter-spacing: 0.03em;
+    color: #5F5F5F;
+}
+
+.card-body button {
+    display: block;
+    padding: 15px 0;
+    margin: 30px auto 0 auto;
+    width: 95%;
+    cursor: pointer;
+    background-color: #3463F8;
+    border: none;
+    border-radius: 3px;
+    font-family: Gilroy;
+    font-style: normal;
+    font-weight: bold;
+    font-size: 18px;
+    line-height: 22px;
+    letter-spacing: 0.01em;
+    color: #FFFFFF;
+}
+
+.card-body button:focus {
+    outline: none;
+}
+
+.card-body .details {
+    font-family: Gilroy;
+    color: red;
+    /* margin-top: .5rem; */
+    text-align: center;
+    display: block;
+}
+
+.cardInfo {
+    margin: 0 auto;
+}
+
+.cardInfo input {
+    width: 45%;
+    margin: 0 6px;
+}
+
+.form {
+    width: 100%;
+    position: absolute;
+    transition: 0.2s all linear;
+    padding: 16px;
+}
+
+.right {
+    right: -100%;
+}
+
+.center {
+    right: 0;
+}
+
+.left {
+    right: 100%;
+}
+
+.centerCur {
+    right: 5%;
+}
+
+.selectCur {
+    background: #FFFFFF;
+    box-shadow: 0px 4px 7px rgba(0, 0, 0, 0.08);
+    border-radius: 6px;
+    width: 90%;
+    margin: 8px 0px;
+}
+
+.searchCur {
+    position: relative;
+}
+
+.searchCur img {
+    position: absolute;
+    right: 20px;
+    top: 40%;
+}
+
+.curList {
+    height: 140px;
+    overflow-y: auto;
+    font-family: Gilroy;
+    font-style: normal;
+    font-weight: 600;
+    font-size: 13px;
+    line-height: 14px;
+    letter-spacing: 0.03em;
+    color: #414042;
+}
+
+.curList ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 5px;
+}
+
+.curList ul li {
+    padding: 5px 20px;
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+.curList ul li:hover {
+    background-color: #E0E8FF;
+}
+
+.back {
+    color: #3463F8;
+    text-align: center;
+    font-weight: bold;
+}
+
+.back span {
+    cursor: pointer;
+}
+
+/* @media only screen and (max-width: 600px) {
+    .card {
+        width: 50%;
+    }
+}
+
+@media only screen and (max-width: 400px) {
+    .card {
+        width: 90%;
+    }
+} */

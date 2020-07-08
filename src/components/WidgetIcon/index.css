@@ -1,0 +1,24 @@
+.widget {
+    display: flex;
+    position: absolute;
+    bottom: 3%;
+    right: 2%;
+    box-shadow: rgba(0, 0, 0, 0.3) 0px 4px 12px;
+    padding: 5px;
+    /* margin: 0 20px 20px 0; */
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.widget .lc-1mpchac {
+    width: 32px;
+    height: 32px;
+}
+
+.hidden {
+    display: none;
+}
