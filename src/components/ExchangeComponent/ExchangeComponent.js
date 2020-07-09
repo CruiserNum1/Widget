@@ -51,6 +51,8 @@ class ExchangeComponent extends React.Component {
         }
 
         const handleButtonClickS1 = () => {
+            if (this.state.curIn === '' || this.state.curOut === '')
+                return;
             this.setState(prevState => ({ stage: prevState.stage++ }));
             this.props.navbarShow();
             document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
@@ -81,7 +83,7 @@ class ExchangeComponent extends React.Component {
                 return;
             }
 
-            this.setState(prevState => ({ stage: prevState.stage++ }));
+            // this.setState(prevState => ({ stage: prevState.stage++ }));
         }
 
         const handleCurInput = async (e) => {
@@ -176,6 +178,9 @@ class ExchangeComponent extends React.Component {
                             {this.state.selectOut}
                         </div>
                     </div>
+                    {this.state.curOut === '' && 
+                        <span className="details">This pair is temporarily unavailable or amount is too small</span>
+                    }
 
                     <button onClick={handleButtonClickS1}>Continue</button>
                 </div>

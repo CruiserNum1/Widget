@@ -24,7 +24,7 @@ class SelectComponent extends React.Component {
             handleBackClick();
         }
         
-        const filteredList = currencyList.filter(cur => cur.short_name.indexOf(this.state.search) !== -1);
+        const filteredList = currencyList.filter(cur => cur.short_name.toLowerCase().indexOf(this.state.search.toLowerCase()) !== -1);
 
         return (
             <div>

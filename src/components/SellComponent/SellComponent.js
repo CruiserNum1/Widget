@@ -4,6 +4,7 @@ import SelectComponent from '../SelectComponent/SelectComponent';
 import {
     ConvertAmount, ConvertAmountOut, PaymentForm, GetCurrencies, CheckAddress
 } from '../../constants';
+import { luhn } from '../../luhn';
 
 class SellComponent extends React.Component {
     constructor(props) {
@@ -29,7 +30,10 @@ class SellComponent extends React.Component {
                 walletAddress: {
                     isValid: false,
                     errorText: ''
-                }
+                },
+                isValidCardNumber: false,
+                isValidCardDate: false,
+                isValidCVC: false
             }
         };
     }
@@ -59,13 +63,94 @@ class SellComponent extends React.Component {
             });
         }
 
+        const handleCardDateChange = (e) => {
+            var target = e.target.value;
+            var firstNum = target.replace(' / ', '').substring(0, 1);
+            var month;
+            if (firstNum > 1 && firstNum < 10)
+                month = '0' + target.replace(' / ', '').substring(0, 1);
+            else
+                month = target.replace(' / ', '').substring(0, 2);
+            var year = target.replace(' / ', '').substring(2, 4);
+            if (month.length === 2) {
+                if (target.length === 5)
+                    e.target.value = month;
+                else if (target.length === 4)
+                    e.target.value = month.substring(0, 1);
+                else
+                    e.target.value = month + ' / ' + year;
+            }
+            var curDate = new Date();
+            var isBiggerThanCurDate = parseInt(year) > parseInt(curDate.getFullYear().toString().substring(2, 4));
+            var isSameWithCurDate = parseInt(year) === parseInt(curDate.getFullYear().toString().substring(2, 4));
+            var errors = this.state.errors;
+            if (isBiggerThanCurDate || (parseInt(month) >= parseInt(curDate.getMonth() + 1) && isSameWithCurDate)) {
+                errors.isValidCardDate = true;
+                document.getElementById("cvc").focus();
+            }
+            else
+                errors.isValidCardDate = false;
+            
+            this.setState({ errors });
+        }
+
+        const handleCardNumberChange = (e) => {
+            var target = e.target.value.trim();
+            var formattedNumber = cardNumberFormat(target);
+            e.target.value = formattedNumber;
+            var errors = this.state.errors;
+            if (luhn(target)) {
+                errors.isValidCardNumber = true;
+                document.getElementById("cardDate").focus();
+            }
+            else
+                errors.isValidCardNumber = false;
+            
+            this.setState({ errors });
+        }
+
+        const cardNumberFormat = (value) => {
+            var v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+            var matches = v.match(/\d{4,16}/g);
+            var match = matches && matches[0] || '';
+            var parts = [];
+
+            for (let i=0, len=match.length; i<len; i+=4) {
+                parts.push(match.substring(i, i+4));
+            }
+
+            if (parts.length) {
+                return parts.join(' ');
+            } else {
+                return value;
+            }
+        }
+
+        const handleCVCChange = (e) => {
+            handleChange(e);
+            var errors = this.state.errors;
+            if (e.target.value.length === 3) {
+                errors.isValidCVC = true;
+                document.getElementById("cardName").focus();
+            }
+            else
+                errors.isValidCVC = false;
+
+            this.setState({ errors });
+        }
+
         const handleButtonClickS1 = () => {
+            if (this.state.curIn === '' || this.state.curOut === '')
+                return;
             this.setState(prevState => ({ stage: prevState.stage++ }));
             this.props.navbarShow();
             document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
         }
 
         const handleButtonClickS2 = () => {
+            var errors = this.state.errors;
+            if (!errors.isValidCardNumber || !errors.isValidCardDate || !errors.isValidCVC || this.state.name.length === 0)
+                return;
             document.getElementById("stages").style.height = document.getElementById("stageThree").clientHeight + 'px';
             this.setState(prevState => ({ stage: prevState.stage++ }));
         }
@@ -226,17 +311,20 @@ class SellComponent extends React.Component {
                             {this.state.selectOut}
                         </div>
                     </div>
+                    {this.state.curOut === '' && 
+                        <span className="details">This pair is temporarily unavailable or amount is too small</span>
+                    }
 
                     <button onClick={handleButtonClickS1}>Continue</button>
                 </div>
 
                 <div id="stageTwo" className={`form ${this.state.stage === 2 ? "center" : this.state.stage === 1 ? "right" : "left"}`}>
-                    <input placeholder="ENTER CARD NUMBER" name="cardNumber" type="text" onChange={handleChange} />
+                    <input className={`${this.state.errors.isValidCardNumber ? "" : "notValidInput"}`} placeholder="ENTER CARD NUMBER" name="cardNumber" type="text" onChange={handleCardNumberChange} />
                     <div className="cardInfo">
-                        <input placeholder="MM/YY" name="cardDate" type="text" onChange={handleChange} />
-                        <input placeholder="CVC" name="cvc" type="text" onChange={handleChange} />
+                        <input className={`${this.state.errors.isValidCardDate ? "" : "notValidInput"}`} placeholder="MM/YY" name="cardDate" id="cardDate" type="text" onChange={handleCardDateChange} />
+                        <input className={`${this.state.errors.isValidCVC ? "" : "notValidInput"}`} placeholder="CVC" maxLength="3" name="cvc" id="cvc" type="text" onChange={handleCVCChange} />
                     </div>
-                    <input placeholder="NAME ON CARD" name="name" type="text" onChange={handleChange} />
+                    <input placeholder="NAME ON CARD" name="name" id="cardName" type="text" onChange={handleChange} />
                     
                     <button onClick={handleButtonClickS2}>Continue</button>
                 </div>
