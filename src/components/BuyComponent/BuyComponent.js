@@ -1,21 +1,26 @@
 import React from 'react';
 import axios from 'axios';
 import SelectComponent from '../SelectComponent/SelectComponent';
-// import Arrow from '../../images/Vector 19.png';
 import {
-    ConvertAmount, ConvertAmountOut, PaymentForm, GetCurrencies, CheckAddress
+    ConvertAmount, ConvertAmountOut, GetCurrencies, CheckAddress
 } from '../../constants';
-import { luhn } from '../../luhn';
+import IntlTelInput from 'react-intl-tel-input';
+import 'react-intl-tel-input/dist/main.css';
+import Payment from 'payment';
+import * as EmailValidator from 'email-validator';
 
 class BuyComponent extends React.Component {
     constructor(props) {
         super(props);
+        this._isMounted = false;
         this.state = {
             curIn: '600',
             curOut: '0',
             selectIn: 'USD',
             selectOut: 'BTC',
+            tempSelect: '',
             currencyList: [],
+            search: [],
             walletAddress: '',
             email: '',
             country: '',
@@ -37,27 +42,61 @@ class BuyComponent extends React.Component {
                 },
                 isValidCardNumber: false,
                 isValidCardDate: false,
-                isValidCVC: false
+                isValidCVC: false,
+                phoneNumber: {
+                    isValid: false,
+                    errorText: ''
+                }
             }
         };
     }
 
-    componentWillMount() {
+    // componentWillMount() {
+    //     axios.get(GetCurrencies)
+    //         .then(res =>
+    //         {
+    //             this.setState({ currencyList: res.data.result });
+    //         });
+
+    //     axios.get(ConvertAmount + this.state.selectIn + '/' + this.state.selectOut + '/' + this.state.curIn)
+    //         .then(res =>
+    //         {
+    //             this.setState({ curOut: res.data });
+    //         });
+    // }
+
+    componentDidMount() {
+        this._isMounted = true;
+
         axios.get(GetCurrencies)
             .then(res =>
             {
-                this.setState({ currencyList: res.data.result });
+                if (this._isMounted) {
+                    this.setState({ currencyList: res.data.result });
+                }
             });
 
         axios.get(ConvertAmount + this.state.selectIn + '/' + this.state.selectOut + '/' + this.state.curIn)
             .then(res =>
             {
-                this.setState({ curOut: res.data });
+                if (this._isMounted)
+                    this.setState({ curOut: res.data });
             });
+        document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
+        
+        // Payment
+        var 
+            number = document.getElementById("cardNumber"),
+            exp = document.getElementById("cardDate"),
+            cvc = document.getElementById("cvc");
+
+        Payment.formatCardNumber(number, 16);
+        Payment.formatCardExpiry(exp);
+        Payment.formatCardCVC(cvc);
     }
 
-    componentDidMount() {
-        document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
+    componentWillUnmount() {
+        this._isMounted = false;
     }
 
     render() {
@@ -68,7 +107,7 @@ class BuyComponent extends React.Component {
         }
 
         const handleButtonClickS1 = () => {
-            if (this.state.curIn === '' || this.state.curOut === '')
+            if (this.state.curIn === '' || this.state.curOut === '' || this.state.curOut === 0)
                 return;
             this.setState(prevState => ({ stage: prevState.stage++ }));
             this.props.navbarShow();
@@ -78,10 +117,18 @@ class BuyComponent extends React.Component {
         const handleButtonClickS2 = async () => {
             let errorsEmail = this.state.errors.email;
             let errorsAddress = this.state.errors.walletAddress;
+            let errorsPhoneNum = this.state.errors.phoneNumber;
             
             if (this.state.email === '') {
                 errorsEmail.errorText = 'Required field';
                 await this.setState({ errorsEmail });
+                document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
+            }
+
+            
+            if (this.state.phoneNumber === '') {
+                errorsPhoneNum.errorText = 'Required field';
+                await this.setState({ errorsPhoneNum });
                 document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
             }
 
@@ -92,7 +139,7 @@ class BuyComponent extends React.Component {
                 return;
             }
 
-            if (!errorsEmail.isValid)
+            if (!errorsEmail.isValid || !errorsPhoneNum.isValid)
                 return;
 
             // check wallet address
@@ -129,6 +176,10 @@ class BuyComponent extends React.Component {
             const convertTo = this.state.selectOut;
             const InputName = name === 'curIn' ? 'curOut' : 'curIn';
             const amount = name === 'curIn' ? this.state.curIn : this.state.curOut;
+            if (amount === '') {
+                document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
+                return;
+            }
 
             await axios.get(URL + `${convertFrom}/${convertTo}/${amount}`)
                 .then(async res => {
@@ -144,22 +195,9 @@ class BuyComponent extends React.Component {
                             [InputName]: res.data
                         })
                     }
+                    document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
                 });
         }
-
-        // const handleChangeSelect = async (e) => {
-        //     await handleChange(e);
-        //     const convertFrom = this.state.selectIn;
-        //     const convertTo = this.state.selectOut;
-        //     const amount = this.state.curIn;
-
-        //     await axios.get(ConvertAmount + `${convertFrom}/${convertTo}/${amount}`)
-        //         .then(async res => {
-        //             await this.setState({
-        //                 curOut: res.data
-        //             })
-        //         });
-        // }
 
         const handleCurChange = async (currency) => {
             document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
@@ -168,12 +206,22 @@ class BuyComponent extends React.Component {
             const convertFrom = this.state.selectIn;
             const convertTo = this.state.selectOut;
             const amount = this.state.curIn;
+            if (amount === '')
+                return;
 
             await axios.get(ConvertAmount + `${convertFrom}/${convertTo}/${amount}`)
                 .then(async res => {
-                    await this.setState({
-                        curOut: res.data
-                    })
+                    if (res.data === 0.0) {
+                        await this.setState({
+                            curOut: ''
+                        });
+                    }
+                    else {
+                        await this.setState({
+                            curOut: res.data
+                        })
+                    }
+                    document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
                 });
         }
 
@@ -183,7 +231,33 @@ class BuyComponent extends React.Component {
             document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
         }
 
-        const validEmailRegex = RegExp(/^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i);
+        const keyDown = async (event) => {
+            var index = this.state.search.map(cur => cur.short_name).indexOf(this.state.tempSelect);
+            switch(event.keyCode){
+                case 38:
+                    index = index > 0 ? --index : 0;
+                    await this.setState({ tempSelect: this.state.search[index].short_name });
+                    var previousSibling = document.querySelectorAll(".curList li.highlight")[0].previousSibling;
+                    if (previousSibling !== null)
+                        previousSibling.scrollIntoView(false);
+                    break;
+                case 40:
+                    index = index < this.state.search.length - 1 ? ++index : this.state.search.length - 1;
+                    await this.setState({ tempSelect: this.state.search[index].short_name });
+                    var nextSibling = document.querySelectorAll(".curList li.highlight")[0].nextSibling;
+                    if (nextSibling !== null)
+                        nextSibling.scrollIntoView(false);
+                    break;
+                case 13:
+                    handleCurChange(this.state.tempSelect);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        // const validEmailRegex = RegExp(/^(([^<>()\[\]\.,;:\s@\"]+(\.[^<>()\[\]\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\.,;:\s@\"]+\.)+[^<>()[\]\.,;:\s@\"]{2,})$/i);
+        // const mailformat = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
         const handleEmailInput = async (e) => {
             const value = e.target.value;
             let emailErrors = this.state.errors.email;
@@ -194,9 +268,10 @@ class BuyComponent extends React.Component {
                 this.setState({
                     emailErrors
                 });
+                document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
                 return;
             }
-            if (validEmailRegex.test(value)) {
+            if (EmailValidator.validate(value)) {
                 emailErrors.isValid = true;
                 emailErrors.errorText = '';
             }
@@ -207,6 +282,32 @@ class BuyComponent extends React.Component {
             this.setState({
                 emailErrors
             });
+
+            document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
+        }
+
+        const handlePhoneNumberChange = async (valid, number, country, formattedNumber) => {
+            var phoneNumErrors = this.state.errors.phoneNumber;
+            await this.setState({ country: country.name, phoneNumber: formattedNumber});
+            if (number === '') {
+                phoneNumErrors.errorText = 'Required field';
+                phoneNumErrors.isValid = false;
+                this.setState({ phoneNumErrors });
+                document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
+                return;
+            }
+            
+            if (valid) {
+                phoneNumErrors.errorText = '';
+                phoneNumErrors.isValid = true;
+            }
+            else {
+                phoneNumErrors.errorText = 'Invalid phone number';
+                phoneNumErrors.isValid = false;
+            }
+            this.setState({ phoneNumErrors });
+
+            document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
         }
 
         const handleAddressInput = async (e) => {
@@ -219,75 +320,75 @@ class BuyComponent extends React.Component {
             this.setState({
                     addressErrors
                 });
+            
+            document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
         }
 
         const handleCardDateChange = (e) => {
-            var target = e.target.value;
-            var firstNum = target.replace(' / ', '').substring(0, 1);
-            var month;
-            if (firstNum > 1 && firstNum < 10)
-                month = '0' + target.replace(' / ', '').substring(0, 1);
-            else
-                month = target.replace(' / ', '').substring(0, 2);
-            var year = target.replace(' / ', '').substring(2, 4);
-            if (month.length === 2) {
-                if (target.length === 5)
-                    e.target.value = month;
-                else if (target.length === 4)
-                    e.target.value = month.substring(0, 1);
-                else
-                    e.target.value = month + ' / ' + year;
-            }
-            var curDate = new Date();
-            var isBiggerThanCurDate = parseInt(year) > parseInt(curDate.getFullYear().toString().substring(2, 4));
-            var isSameWithCurDate = parseInt(year) === parseInt(curDate.getFullYear().toString().substring(2, 4));
-            var errors = this.state.errors;
-            if (isBiggerThanCurDate || (parseInt(month) >= parseInt(curDate.getMonth() + 1) && isSameWithCurDate)) {
+            handleChange(e);
+            var 
+                exp = document.getElementById("cardDate").value,
+                errors = this.state.errors;
+
+            if (Payment.fns.validateCardExpiry(exp)) {
                 errors.isValidCardDate = true;
                 document.getElementById("cvc").focus();
             }
             else
                 errors.isValidCardDate = false;
-            
+
             this.setState({ errors });
+            // var firstNum = target.replace(' / ', '').substring(0, 1);
+            // var month;
+            // if (firstNum > 1 && firstNum < 10)
+            //     month = '0' + target.replace(' / ', '').substring(0, 1);
+            // else
+            //     month = target.replace(' / ', '').substring(0, 2);
+            // var year = target.replace(' / ', '').substring(2, 4);
+            // if (month.length === 2) {
+            //     if (target.length === 5)
+            //         e.target.value = month;
+            //     else if (target.length === 4)
+            //         e.target.value = month.substring(0, 1);
+            //     else
+            //         e.target.value = month + ' / ' + year;
+            // }
+            // var curDate = new Date();
+            // var isBiggerThanCurDate = parseInt(year) > parseInt(curDate.getFullYear().toString().substring(2, 4));
+            // var isSameWithCurDate = parseInt(year) === parseInt(curDate.getFullYear().toString().substring(2, 4));
+            // var errors = this.state.errors;
+            // if (isBiggerThanCurDate || (parseInt(month) >= parseInt(curDate.getMonth() + 1) && isSameWithCurDate)) {
+            //     errors.isValidCardDate = true;
+            //     document.getElementById("cvc").focus();
+            // }
+            // else
+            //     errors.isValidCardDate = false;
+            
         }
 
         const handleCardNumberChange = (e) => {
-            var target = e.target.value.trim();
-            var formattedNumber = cardNumberFormat(target);
-            e.target.value = formattedNumber;
-            var errors = this.state.errors;
-            if (luhn(target)) {
+            handleChange(e);
+            var 
+                number = document.getElementById("cardNumber").value,
+                errors = this.state.errors;
+            
+            if (Payment.fns.validateCardNumber(number)) {
                 errors.isValidCardNumber = true;
                 document.getElementById("cardDate").focus();
             }
             else
                 errors.isValidCardNumber = false;
-            
+
             this.setState({ errors });
-        }
-
-        const cardNumberFormat = (value) => {
-            var v = value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
-            var matches = v.match(/\d{4,16}/g);
-            var match = matches && matches[0] || '';
-            var parts = [];
-
-            for (let i=0, len=match.length; i<len; i+=4) {
-                parts.push(match.substring(i, i+4));
-            }
-
-            if (parts.length) {
-                return parts.join(' ');
-            } else {
-                return value;
-            }
         }
 
         const handleCVCChange = (e) => {
             handleChange(e);
-            var errors = this.state.errors;
-            if (e.target.value.length === 3) {
+            var 
+                cvc = document.getElementById("cvc").value,
+                errors = this.state.errors;
+            
+            if (Payment.fns.validateCardCVC(cvc)) {
                 errors.isValidCVC = true;
                 document.getElementById("cardName").focus();
             }
@@ -295,6 +396,16 @@ class BuyComponent extends React.Component {
                 errors.isValidCVC = false;
 
             this.setState({ errors });
+        }
+
+        const mouseOverEvent = (e) => {
+            this.setState({ tempSelect: e.target.innerHTML });
+        }
+
+        const handleSearchChange = (search) => {
+            var currencies = this.state.selectFor === 'selectIn' ? selectInCurrencies : selectOutCurrencies;
+            const filteredList = currencies.filter(cur => cur.short_name.toLowerCase().indexOf(search.toLowerCase()) !== -1);
+            this.setState({ tempSelect: filteredList[0].short_name, search: filteredList });
         }
 
         const selectInCurrencies = this.state.currencyList.filter(cur => !cur.withdrawEnabled);
@@ -305,11 +416,8 @@ class BuyComponent extends React.Component {
                 <div id="stageOne" className={`form ${this.state.stage === 1 ? "center" : "left"}`}>
                     <div className="currencies">
                         <input placeholder="YOU GIVE" type="number" value={this.state.curIn} name="curIn" onChange={handleCurInput} />
-                        {/* <select name="selectIn" value={this.state.selectIn} onChange={handleChangeSelect} onClick={handleSelectClick}>
-                            <option>USD</option>
-                        </select> */}
                         <div onClick={() => {
-                                this.setState({stage: 'selectCur', selectFor: 'selectIn'});
+                                this.setState({stage: 'selectCur', selectFor: 'selectIn', tempSelect: selectInCurrencies[0].short_name, search: selectInCurrencies});
                                 this.props.navbarShow();
                                 document.getElementById("stages").style.height = document.getElementById("stageSelect").clientHeight + 'px';
                             }}>
@@ -318,11 +426,8 @@ class BuyComponent extends React.Component {
                     </div>
                     <div className="currencies">
                         <input placeholder="YOU GET" type="number" value={this.state.curOut} name="curOut" onChange={handleCurInput} />
-                        {/* <select name="selectOut" value={this.state.selectOut} onChange={handleChangeSelect} onClick={handleSelectClick}>
-                            <option>BTC</option>
-                        </select> */}
                         <div onClick={() => {
-                                this.setState({stage: 'selectCur', selectFor: 'selectOut'});
+                                this.setState({stage: 'selectCur', selectFor: 'selectOut', tempSelect: selectOutCurrencies[0].short_name, search: selectOutCurrencies});
                                 this.props.navbarShow();
                                 document.getElementById("stages").style.height = document.getElementById("stageSelect").clientHeight + 'px';
                             }}>
@@ -341,22 +446,28 @@ class BuyComponent extends React.Component {
                     <span className="details">{this.state.errors.walletAddress.errorText}</span>
                     <input placeholder="EMAIL" name="email" type="text" onChange={handleEmailInput} />
                     <span className="details">{this.state.errors.email.errorText}</span>
-                    <div className="currencies" style={{ marginTop: "8px" }}>
-                        <select name="country" onChange={handleChange}>
+                    <div style={{ marginTop: "8px" }}>
+                        {/* <select name="country" onChange={handleChange}>
                             <option>RU</option>
                             <option>EN</option>
                         </select>
-                        <input placeholder="PHONE NUMBER" name="phoneNumber" type="text" onChange={handleChange} />
+                        <input placeholder="PHONE NUMBER" name="phoneNumber" type="text" onChange={handleChange} /> */}
+                        <IntlTelInput
+                            containerClassName="intlTelContainer intl-tel-input"
+                            placeholder="PHONE NUMBER"
+                            onPhoneNumberChange={handlePhoneNumberChange}
+                        />
+                        <span className="details">{this.state.errors.phoneNumber.errorText}</span>
                     </div>
 
                     <button onClick={handleButtonClickS2}>Continue</button>
                 </div>
 
                 <div id="stageThree" className={`form ${this.state.stage === 3 ? "center" : "right"}`}>
-                    <input className={`${this.state.errors.isValidCardNumber ? "" : "notValidInput"}`} placeholder="ENTER CARD NUMBER" name="cardNumber" type="text" onChange={handleCardNumberChange} />
+                    <input className={`${this.state.errors.isValidCardNumber ? "" : "notValidInput"}`} placeholder="ENTER CARD NUMBER" name="cardNumber" id="cardNumber" type="text" onChange={handleCardNumberChange} />
                     <div className="cardInfo">
                         <input className={`${this.state.errors.isValidCardDate ? "" : "notValidInput"}`} placeholder="MM/YY" name="cardDate" id="cardDate" type="text" onChange={handleCardDateChange} />
-                        <input className={`${this.state.errors.isValidCVC ? "" : "notValidInput"}`} placeholder="CVC" maxLength="3" name="cvc" id="cvc" type="text" onChange={handleCVCChange} />
+                        <input className={`${this.state.errors.isValidCVC ? "" : "notValidInput"}`} placeholder="CVC" name="cvc" id="cvc" type="text" onChange={handleCVCChange} />
                     </div>
                     <input placeholder="NAME" name="name" id="cardName" type="text" onChange={handleChange} />
                     
@@ -364,7 +475,10 @@ class BuyComponent extends React.Component {
                 </div>
 
                 <div id="stageSelect" className={`form selectCur ${this.state.stage === 'selectCur' ? "centerCur" : "right"}`}>
-                    <SelectComponent handleCurChange={handleCurChange} handleBackClick={handleBackClick} currencyList={this.state.selectFor === 'selectIn' ? selectInCurrencies : selectOutCurrencies} />
+                    <SelectComponent handleCurChange={handleCurChange} onKeyDown={keyDown}
+                        mouserOver={mouseOverEvent} tempSelect={this.state.tempSelect} onSearchChange={handleSearchChange}
+                        handleBackClick={handleBackClick} currencyList={this.state.search} 
+                    />
                 </div>
             </div>
         );

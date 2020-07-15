@@ -1,30 +1,43 @@
+@font-face {
+    font-family: Gilroy-Light;
+    src: url(../../fonts/Gilroy-Light.ttf);
+}
+@font-face {
+    font-family: Gilroy-Medium;
+    src: url(../../fonts/Gilroy-Medium.ttf);
+}
+@font-face {
+    font-family: Gilroy-Regular;
+    src: url(../../fonts/Gilroy-Regular.ttf);
+}
+
 .card {
     position: absolute;
-    right: 0;
-    bottom: 0;
-    width: 0;
-    height: 0;
+    right: -100%;
+    bottom: 5%;
+    width: 332px;
+    height: auto;
     /* min-height: 400px; */
     /* max-height: auto; */
-    opacity: 0;
+    /* opacity: 0; */
     max-width: 100%;
     z-index: 5;
     box-shadow: 3px 11px 20px rgba(0, 0, 0, 0.05);
     border-radius: 6px;
     background: linear-gradient(161.2deg, #FFFFFF 3.69%, #FFFFFF 91.98%);
     padding: 16px;
-    transition: 0.3s all linear;
+    transition: 0.4s all linear;
     overflow: hidden;
 }
 
 .show {
-    will-change: opacity;
+    right: 3%;
+    /* will-change: opacity;
     backface-visibility: hidden;
     width: 332px;
     height: 480px;
-    opacity: 1;
-    right: 3%;
-    bottom: 5%;
+    opacity: 1; */
+    /* bottom: 5%; */
 }
 
 .card-header {
@@ -32,7 +45,7 @@
 }
 
 .card-header .header-text {
-    font-family: Gilroy;
+    font-family: Gilroy-Medium;
     font-style: normal;
     font-weight: 500;
     font-size: 14px;
@@ -109,7 +122,7 @@
     text-align: center;
     cursor: pointer;
     border-radius: 3px;
-    font-family: Gilroy;
+    font-family: Gilroy-Medium;
     font-style: normal;
     font-weight: 600;
     font-size: 13px;
@@ -149,7 +162,7 @@
     background-color: #F7F9FA;
     border-radius: 4px;
     outline: 0px;
-    font-family: Gilroy;
+    font-family: Gilroy-Medium;
     font-style: normal;
     font-weight: 600;
     font-size: 13px;
@@ -177,7 +190,7 @@
     width: 25%;
     background-color: #E0E8FF;
     outline: 0px;
-    font-family: Gilroy;
+    font-family: Gilroy-Medium;
     font-style: normal;
     font-weight: 600;
     font-size: 13px;
@@ -205,7 +218,7 @@
     width: 25%;
     background-color: #E0E8FF;
     outline: 0px;
-    font-family: Gilroy;
+    font-family: Gilroy-Medium;
     font-style: normal;
     font-weight: 600;
     font-size: 13px;
@@ -223,7 +236,7 @@
     background-color: #3463F8;
     border: none;
     border-radius: 3px;
-    font-family: Gilroy;
+    font-family: Gilroy-Medium;
     font-style: normal;
     font-weight: bold;
     font-size: 18px;
@@ -237,7 +250,7 @@
 }
 
 .card-body .details {
-    font-family: Gilroy;
+    font-family: Gilroy-Medium;
     color: red;
     /* margin-top: .5rem; */
     text-align: center;
@@ -258,6 +271,7 @@
     position: absolute;
     transition: 0.2s all linear;
     padding: 16px;
+    padding-bottom: 0;
 }
 
 .right {
@@ -282,6 +296,7 @@
     border-radius: 6px;
     width: 90%;
     margin: 8px 0px;
+    padding-bottom: 15px;
 }
 
 .searchCur {
@@ -297,7 +312,7 @@
 .curList {
     height: 140px;
     overflow-y: auto;
-    font-family: Gilroy;
+    font-family: Gilroy-Medium;
     font-style: normal;
     font-weight: 600;
     font-size: 13px;
@@ -318,7 +333,7 @@
     border-radius: 3px;
 }
 
-.curList ul li:hover {
+.curList ul li.highlight {
     background-color: #E0E8FF;
 }
 
@@ -336,10 +351,37 @@
     color: #FF6E4E !important;
 }
 
+.intlTelContainer {
+    width: 100%;
+}
+
+.intlTelContainer > div {
+    margin-left: calc(40px / 2);
+}
+
+.intlTelContainer > div div {
+    outline: none;
+}
+
+.intlTelContainer > div ul {
+    width: 100%;
+    left: -20px;
+}
+
+.intlTelContainer > input {
+    padding-left: 70px !important;
+}
+
+input:focus {
+    outline: none;
+    outline-offset: 0;
+}
+
 @media only screen and (max-width: 500px) {
     .show {
-        right: 0;
-        bottom: 0;
+        /* right: 0;
+        bottom: 0; */
+        height: auto;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);

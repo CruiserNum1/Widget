@@ -2,18 +2,21 @@ import React from 'react';
 import axios from 'axios';
 import SelectComponent from '../SelectComponent/SelectComponent';
 import {
-    ConvertAmount, ConvertAmountOut, PaymentForm, GetCurrencies, CheckAddress
+    ConvertAmount, ConvertAmountOut, GetCurrencies, CheckAddress
 } from '../../constants';
 
 class ExchangeComponent extends React.Component {
     constructor(props) {
         super(props);
+        this._isMounted = false;
         this.state = {
             curIn: '600',
             curOut: '0',
             selectIn: 'USD',
             selectOut: 'BTC',
+            tempSelect: '',
             currencyList: [],
+            search: [],
             walletAddress: '',
             stage: 1,
             errors: {
@@ -25,22 +28,27 @@ class ExchangeComponent extends React.Component {
         };
     }
 
-    componentWillMount() {
+    componentDidMount() {
+        this._isMounted = true;
+
         axios.get(GetCurrencies)
             .then(res =>
             {
-                this.setState({ currencyList: res.data.result });
+                if (this._isMounted)
+                    this.setState({ currencyList: res.data.result });
             });
 
         axios.get(ConvertAmount + this.state.selectIn + '/' + this.state.selectOut + '/' + this.state.curIn)
             .then(res =>
             {
-                this.setState({ curOut: res.data });
+                if (this._isMounted)
+                    this.setState({ curOut: res.data });
             });
+        document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
     }
 
-    componentDidMount() {
-        document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
+    componentWillUnmount() {
+        this._isMounted = false;
     }
 
     render() {
@@ -51,7 +59,7 @@ class ExchangeComponent extends React.Component {
         }
 
         const handleButtonClickS1 = () => {
-            if (this.state.curIn === '' || this.state.curOut === '')
+            if (this.state.curIn === '' || this.state.curOut === '' || this.state.curOut === 0)
                 return;
             this.setState(prevState => ({ stage: prevState.stage++ }));
             this.props.navbarShow();
@@ -94,7 +102,11 @@ class ExchangeComponent extends React.Component {
             const convertTo = this.state.selectOut;
             const InputName = name === 'curIn' ? 'curOut' : 'curIn';
             const amount = name === 'curIn' ? this.state.curIn : this.state.curOut;
-
+            if (amount === '') {
+                document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
+                return;
+            }
+            
             await axios.get(URL + `${convertFrom}/${convertTo}/${amount}`)
                 .then(async res => {
                     if (res.data === 0.0)
@@ -109,6 +121,7 @@ class ExchangeComponent extends React.Component {
                             [InputName]: res.data
                         })
                     }
+                    document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
                 });
         }
 
@@ -119,12 +132,22 @@ class ExchangeComponent extends React.Component {
             const convertFrom = this.state.selectIn;
             const convertTo = this.state.selectOut;
             const amount = this.state.curIn;
+            if (amount === '')
+                return;
 
             await axios.get(ConvertAmount + `${convertFrom}/${convertTo}/${amount}`)
                 .then(async res => {
-                    await this.setState({
-                        curOut: res.data
-                    })
+                    if (res.data === 0.0) {
+                        await this.setState({
+                            curOut: ''
+                        });
+                    }
+                    else {
+                        await this.setState({
+                            curOut: res.data
+                        })
+                    }
+                    document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
                 });
         }
 
@@ -132,6 +155,31 @@ class ExchangeComponent extends React.Component {
             this.props.navbarShow();
             this.setState({ stage: 1 });
             document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
+        }
+
+        const keyDown = async (event) => {
+            var index = this.state.search.map(cur => cur.short_name).indexOf(this.state.tempSelect);
+            switch(event.keyCode){
+                case 38:
+                    index = index > 0 ? --index : 0;
+                    await this.setState({ tempSelect: this.state.search[index].short_name });
+                    var previousSibling = document.querySelectorAll(".curList li.highlight")[0].previousSibling;
+                    if (previousSibling !== null)
+                        previousSibling.scrollIntoView(false);
+                    break;
+                case 40:
+                    index = index < this.state.search.length - 1 ? ++index : this.state.search.length - 1;
+                    await this.setState({ tempSelect: this.state.search[index].short_name });
+                    var nextSibling = document.querySelectorAll(".curList li.highlight")[0].nextSibling;
+                    if (nextSibling !== null)
+                        nextSibling.scrollIntoView(false);
+                    break;
+                case 13:
+                    handleCurChange(this.state.tempSelect);
+                    break;
+                default:
+                    break;
+            }
         }
 
         const handleAddressInput = async (e) => {
@@ -144,6 +192,18 @@ class ExchangeComponent extends React.Component {
             this.setState({
                     addressErrors
                 });
+
+            document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
+        }
+
+        const mouseOverEvent = (e) => {
+            this.setState({ tempSelect: e.target.innerHTML });
+        }
+
+        const handleSearchChange = (search) => {
+            var currencies = this.state.selectFor === 'selectIn' ? selectInCurrencies : selectOutCurrencies;
+            const filteredList = currencies.filter(cur => cur.short_name.toLowerCase().indexOf(search.toLowerCase()) !== -1);
+            this.setState({ tempSelect: filteredList[0].short_name, search: filteredList });
         }
 
         const selectInCurrencies = this.state.currencyList.filter(cur => !cur.withdrawEnabled);
@@ -154,11 +214,8 @@ class ExchangeComponent extends React.Component {
                 <div id="stageOne" className={`form ${this.state.stage === 1 ? "center" : "left"}`}>
                     <div className="currencies">
                         <input placeholder="YOU GIVE" type="number" value={this.state.curIn} name="curIn" onChange={handleCurInput} />
-                        {/* <select name="selectIn" value={this.state.selectIn} onChange={handleChangeSelect} onClick={handleSelectClick}>
-                            <option>USD</option>
-                        </select> */}
                         <div onClick={() => {
-                                this.setState({stage: 'selectCur', selectFor: 'selectIn'});
+                                this.setState({stage: 'selectCur', selectFor: 'selectIn', tempSelect: selectInCurrencies[0].short_name, search: selectInCurrencies});
                                 this.props.navbarShow();
                                 document.getElementById("stages").style.height = document.getElementById("stageSelect").clientHeight + 'px';
                             }}>
@@ -167,11 +224,8 @@ class ExchangeComponent extends React.Component {
                     </div>
                     <div className="currencies">
                         <input placeholder="YOU GET" type="number" value={this.state.curOut} name="curOut" onChange={handleCurInput} />
-                        {/* <select name="selectOut" value={this.state.selectOut} onChange={handleChangeSelect} onClick={handleSelectClick}>
-                            <option>BTC</option>
-                        </select> */}
                         <div onClick={() => {
-                                this.setState({stage: 'selectCur', selectFor: 'selectOut'});
+                                this.setState({stage: 'selectCur', selectFor: 'selectOut', tempSelect: selectOutCurrencies[0].short_name, search: selectOutCurrencies});
                                 this.props.navbarShow();
                                 document.getElementById("stages").style.height = document.getElementById("stageSelect").clientHeight + 'px';
                             }}>
@@ -193,7 +247,10 @@ class ExchangeComponent extends React.Component {
                 </div>
 
                 <div id="stageSelect" className={`form selectCur ${this.state.stage === 'selectCur' ? "centerCur" : "right"}`}>
-                    <SelectComponent handleCurChange={handleCurChange} handleBackClick={handleBackClick} currencyList={this.state.selectFor === 'selectIn' ? selectInCurrencies : selectOutCurrencies} />
+                    <SelectComponent handleCurChange={handleCurChange} onKeyDown={keyDown}
+                        mouserOver={mouseOverEvent} tempSelect={this.state.tempSelect} onSearchChange={handleSearchChange}
+                        handleBackClick={handleBackClick} currencyList={this.state.search} 
+                    />
                 </div>
             </div>
         );
