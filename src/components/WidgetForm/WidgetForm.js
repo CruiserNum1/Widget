@@ -3,13 +3,15 @@ import './index.css';
 import BuyComponent from '../BuyComponent/BuyComponent';
 import SellComponent from '../SellComponent/SellComponent';
 import ExchangeComponent from '../ExchangeComponent/ExchangeComponent';
+import { connect } from 'react-redux';
 
 class WidgetForm extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
             type: 'Buy',
-            navbarShow: true
+            navbarShow: true,
+            currency: ''
         };
     }
 
@@ -28,8 +30,17 @@ class WidgetForm extends React.Component {
             this.setState(prevState => ({ navbarShow: !prevState.navbarShow }));
         }
 
-        const {isShow} = this.props;
-        const text = this.state.type === "Exchange" ? "Exchange bitcoin" : `${this.state.type} bitcoin with bank card`;
+        const handleCurrencyChange = (currency) => {
+            this.setState({ currency: currency });
+        }
+
+        const handleChangeType = (action) => {
+            this.props.dispatch(action);
+        }
+
+        const { isShow } = this.props;
+        const { currency } = this.state;
+        const text = this.state.type === "Exchange" ? `Exchange ${currency}` : `${this.state.type} ${currency} with bank card`;
 
         return (
             <div className={`card ${!isShow ? "" : "show"}`}>
@@ -49,7 +60,7 @@ class WidgetForm extends React.Component {
                         <path d="M68.5693 13.1159H75.0065C75.701 13.1159 76.3888 12.9792 77.0304 12.7137C77.672 12.4481 78.2549 12.0588 78.7458 11.5682C79.2367 11.0775 79.626 10.495 79.8915 9.85403C80.1569 9.21303 80.2932 8.52607 80.2927 7.83243V7.83243C80.292 6.43281 79.7347 5.09077 78.7434 4.10147C77.7521 3.11216 76.4079 2.55659 75.0065 2.55695H68.5693" stroke="#46B2D1" strokeWidth="3.5"/>
                         <path d="M54.0275 14.8922L47.9548 2.32627C46.9053 0.155267 43.7916 0.200607 42.8075 2.40361L37.2275 14.8922H41.5123L45.6595 5.73879L47.3406 9.6994H45.2496L43.8209 12.8999H48.7025L49.5491 14.8922H54.0275Z" fill="#151515"/>
                     </svg>
-                    <span className="header-text">{text}<br /><span style={{ color: "#6B6B6B", fontWeight: 600 }}>In partnership with Name company</span></span>
+                    <span className="header-text">{text}<br /><span style={{ color: "#6B6B6B", fontWeight: "600", fontFamily: "Gilroy-Bold" }}>In partnership with Name company</span></span>
                 </div>
                 <div className="card-body">
                     {this.state.navbarShow && 
@@ -63,15 +74,17 @@ class WidgetForm extends React.Component {
                     }
                     
                     {this.state.type === 'Buy' ?
-                        <BuyComponent navbarShow={handleNavbarShow} /> :
+                        <BuyComponent navbarShow={handleNavbarShow} onCurrencyChange={handleCurrencyChange} onChangeType={handleChangeType} /> :
                         this.state.type === 'Sell' ?
-                            <SellComponent navbarShow={handleNavbarShow} /> :
-                            <ExchangeComponent navbarShow={handleNavbarShow} />
+                            <SellComponent navbarShow={handleNavbarShow} onCurrencyChange={handleCurrencyChange} onChangeType={handleChangeType} /> :
+                            <ExchangeComponent navbarShow={handleNavbarShow} onCurrencyChange={handleCurrencyChange} onChangeType={handleChangeType} />
                     }
                 </div>
             </div>
         );
     }
 }
+
+WidgetForm = connect()(WidgetForm);
 
 export default WidgetForm;

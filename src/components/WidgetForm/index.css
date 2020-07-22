@@ -10,6 +10,10 @@
     font-family: Gilroy-Regular;
     src: url(../../fonts/Gilroy-Regular.ttf);
 }
+@font-face {
+    font-family: Gilroy-Bold;
+    src: url(../../fonts/Gilroy-Bold.ttf);
+}
 
 .card {
     position: absolute;
@@ -166,7 +170,7 @@
     font-style: normal;
     font-weight: 600;
     font-size: 13px;
-    line-height: 14px;
+    /* line-height: 14px; */
     letter-spacing: 0.03em;
     color: #5F5F5F;
 }
@@ -227,11 +231,11 @@
     color: #5F5F5F;
 }
 
-.card-body button {
-    display: block;
+.card-body button:not(.checkbox) {
+    display: inline-block;
     padding: 15px 0;
-    margin: 30px auto 0 auto;
-    width: 95%;
+    margin: 30px 0 0 0;
+    width: 47%;
     cursor: pointer;
     background-color: #3463F8;
     border: none;
@@ -245,8 +249,26 @@
     color: #FFFFFF;
 }
 
+.card-body button.mainButton {
+    display: block;
+    margin: 30px auto 0 auto;
+    width: 95%;
+}
+
+.card-body button.backButton {
+    background: #C6D3FF;
+    margin-right: 6%;
+}
+
 .card-body button:focus {
     outline: none;
+}
+
+.card-body button:disabled {
+    pointer-events: none !important;
+    user-select: none !important;
+    opacity: .65 !important;
+    cursor: default !important;
 }
 
 .card-body .details {
@@ -377,11 +399,26 @@ input:focus {
     outline-offset: 0;
 }
 
+button.checkbox {
+    border-radius: 3px !important;
+    margin-right: 18px;
+}
+
+.checkboxLabel {
+    display: inline-block;
+    width: 70%;
+    line-height: 16px;
+    font-size: 14px;
+    font-family: Gilroy-Medium;
+    font-style: normal;
+    cursor: pointer;
+}
+
 @media only screen and (max-width: 500px) {
     .show {
         /* right: 0;
         bottom: 0; */
-        height: auto;
+        height: max-content;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);

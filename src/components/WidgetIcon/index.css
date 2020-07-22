@@ -3,7 +3,8 @@
     position: absolute;
     bottom: 3%;
     right: 2%;
-    box-shadow: rgba(0, 0, 0, 0.3) 0px 4px 12px;
+    /* box-shadow: rgba(0, 0, 0, 0.3) 0px 4px 12px; */
+    box-shadow: 0px 2px 11px rgba(0, 0, 0, 0.25);
     padding: 5px;
     /* margin: 0 20px 20px 0; */
     width: 60px;
@@ -12,6 +13,32 @@
     justify-content: center;
     align-items: center;
     cursor: pointer;
+    transition: 0.4s all linear;
+}
+
+.widgetIcon {
+    width: 20px;
+    height: 20px;
+    display: inline-block;
+    /* mask-size:100%;
+    mask-repeat: no-repeat;
+    mask-position: center; */
+    mask-image: url(../../images/Stroke.png);
+    /* -webkit-mask-size: 100%;
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-position: center; */
+    -webkit-mask-image: url(../../images/Stroke.png);
+
+     background-color: #3463F8;
+}
+
+.widget:hover {
+    background: linear-gradient(160.56deg, #3463F8 11.25%, #1443D9 89.75%);
+    box-shadow: 0px 2px 11px rgba(0, 0, 0, 0.12);
+}
+
+.widget:hover .widgetIcon {
+    background-color: #ffffff;
 }
 
 .widget .lc-1mpchac {
@@ -20,5 +47,5 @@
 }
 
 .hidden {
-    display: none;
+    right: -100%;
 }

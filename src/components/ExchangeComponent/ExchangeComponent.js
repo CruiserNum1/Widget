@@ -4,6 +4,9 @@ import SelectComponent from '../SelectComponent/SelectComponent';
 import {
     ConvertAmount, ConvertAmountOut, GetCurrencies, CheckAddress
 } from '../../constants';
+import { connect } from 'react-redux';
+import { exchangeComponentState } from '../../Redux/actions';
+import Checkbox from 'react-checkbox-component';
 
 class ExchangeComponent extends React.Component {
     constructor(props) {
@@ -17,7 +20,10 @@ class ExchangeComponent extends React.Component {
             tempSelect: '',
             currencyList: [],
             search: [],
+            searchText: '',
             walletAddress: '',
+            isButtonDisabled: false,
+            isAgreeded: false,
             stage: 1,
             errors: {
                 walletAddress: {
@@ -28,27 +34,45 @@ class ExchangeComponent extends React.Component {
         };
     }
 
-    componentDidMount() {
+    async componentDidMount() {
         this._isMounted = true;
+
+        // initial state
+        const { prevState } = this.props;
+        await this.setState({
+            curIn: prevState.curIn,
+            selectIn: prevState.selectIn,
+            selectOut: prevState.selectOut
+        });
 
         axios.get(GetCurrencies)
             .then(res =>
             {
                 if (this._isMounted)
                     this.setState({ currencyList: res.data.result });
+                this.props.onCurrencyChange(res.data.result.filter(cur => cur.short_name === this.state.selectOut)[0].name);
             });
 
         axios.get(ConvertAmount + this.state.selectIn + '/' + this.state.selectOut + '/' + this.state.curIn)
             .then(res =>
             {
-                if (this._isMounted)
-                    this.setState({ curOut: res.data });
+                if (this._isMounted) {
+                    if (res.data !== 0.0)
+                        this.setState({ curOut: res.data });
+                }
             });
         document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
     }
 
     componentWillUnmount() {
         this._isMounted = false;
+
+        // When changed type
+        this.props.onChangeType(exchangeComponentState({
+            curIn: this.state.curIn,
+            selectIn: this.state.selectIn,
+            selectOut: this.state.selectOut
+        }));
     }
 
     render() {
@@ -59,8 +83,9 @@ class ExchangeComponent extends React.Component {
         }
 
         const handleButtonClickS1 = () => {
-            if (this.state.curIn === '' || this.state.curOut === '' || this.state.curOut === 0)
+            if (this.state.curIn === '' || this.state.curOut === '' || parseFloat(this.state.curOut) === 0)
                 return;
+            
             this.setState(prevState => ({ stage: prevState.stage++ }));
             this.props.navbarShow();
             document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
@@ -77,6 +102,7 @@ class ExchangeComponent extends React.Component {
             }
 
             // check wallet address
+            this.setState({ isButtonDisabled: true });
             var arr = {
                 address: this.state.walletAddress,
                 currency: this.state.selectOut
@@ -86,10 +112,12 @@ class ExchangeComponent extends React.Component {
 
             if (result === 'not_valid') {
                 errorsAddress.errorText = 'Invalid address';
-                await this.setState({ errorsAddress });
+                await this.setState({ errorsAddress, isButtonDisabled: false });
                 document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
                 return;
             }
+
+            this.setState(prevState => ({ isButtonDisabled: false }));
 
             // this.setState(prevState => ({ stage: prevState.stage++ }));
         }
@@ -128,7 +156,12 @@ class ExchangeComponent extends React.Component {
         const handleCurChange = async (currency) => {
             document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
             this.props.navbarShow();
-            await this.setState({ stage: 1, [this.state.selectFor]: currency });
+            await this.setState({ stage: 1, [this.state.selectFor]: currency, searchText: '' });
+            if (this.state.selectFor === 'selectOut') {
+                var curFullName = selectOutCurrencies.filter(cur => cur.short_name === currency)[0].name;
+                this.props.onCurrencyChange(curFullName);
+            }
+            
             const convertFrom = this.state.selectIn;
             const convertTo = this.state.selectOut;
             const amount = this.state.curIn;
@@ -153,7 +186,7 @@ class ExchangeComponent extends React.Component {
 
         const handleBackClick = () => {
             this.props.navbarShow();
-            this.setState({ stage: 1 });
+            this.setState({ stage: 1, searchText: '' });
             document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
         }
 
@@ -203,7 +236,18 @@ class ExchangeComponent extends React.Component {
         const handleSearchChange = (search) => {
             var currencies = this.state.selectFor === 'selectIn' ? selectInCurrencies : selectOutCurrencies;
             const filteredList = currencies.filter(cur => cur.short_name.toLowerCase().indexOf(search.toLowerCase()) !== -1);
-            this.setState({ tempSelect: filteredList[0].short_name, search: filteredList });
+            if (filteredList.length === 0)
+                this.setState({ search: filteredList, searchText: search });
+            else
+                this.setState({ tempSelect: filteredList[0].short_name, search: filteredList, searchText: search });
+        }
+
+        const handleCheckboxChange = (checked) => {
+            this.setState({ isAgreeded: checked });
+        }
+
+        const handleCheckboxLabelClick = () => {
+            this.setState(prevState => ({ isAgreeded: !prevState.isAgreeded }));
         }
 
         const selectInCurrencies = this.state.currencyList.filter(cur => !cur.withdrawEnabled);
@@ -236,18 +280,23 @@ class ExchangeComponent extends React.Component {
                         <span className="details">This pair is temporarily unavailable or amount is too small</span>
                     }
 
-                    <button onClick={handleButtonClickS1}>Continue</button>
+                    <button className="mainButton" onClick={handleButtonClickS1}>Continue</button>
                 </div>
 
                 <div id="stageTwo" className={`form ${this.state.stage === 2 ? "center" : this.state.stage === 1 ? "right" : "left"}`}>
                     <input placeholder="CRYPTO WALLET ADDRESS" name="walletAddress" type="text" onChange={handleAddressInput} />
                     <span className="details">{this.state.errors.walletAddress.errorText}</span>
 
-                    <button onClick={handleButtonClickS2}>Change</button>
+                    <div>
+                        <Checkbox size="big" color="blue" shape="square" isChecked={this.state.isAgreeded} onChange={handleCheckboxChange} />
+                        <span className="checkboxLabel" onClick={handleCheckboxLabelClick}>I accept the terms of the user agreement</span>
+                    </div>
+
+                    <button disabled={this.state.isButtonDisabled} className="mainButton" onClick={handleButtonClickS2}>Change</button>
                 </div>
 
                 <div id="stageSelect" className={`form selectCur ${this.state.stage === 'selectCur' ? "centerCur" : "right"}`}>
-                    <SelectComponent handleCurChange={handleCurChange} onKeyDown={keyDown}
+                    <SelectComponent handleCurChange={handleCurChange} onKeyDown={keyDown} searchText={this.state.searchText}
                         mouserOver={mouseOverEvent} tempSelect={this.state.tempSelect} onSearchChange={handleSearchChange}
                         handleBackClick={handleBackClick} currencyList={this.state.search} 
                     />
@@ -256,5 +305,13 @@ class ExchangeComponent extends React.Component {
         );
     }
 }
+
+const mapStateToProps = state => {
+    return {
+        prevState: state.exchangeComponent
+    }
+}
+
+ExchangeComponent = connect(mapStateToProps)(ExchangeComponent);
 
 export default ExchangeComponent;

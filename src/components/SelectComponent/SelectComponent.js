@@ -3,36 +3,26 @@ import Search from '../../images/Vector.png';
 import Back from '../../images/Vector 181.png';
 
 class SelectComponent extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            search: ''
-        }
-    }
-
     render() {
         const {currencyList, handleCurChange, handleBackClick, onKeyDown, mouserOver, onSearchChange} = this.props;
         const handleChange = (e) => {
-            this.setState({ search: e.target.value });
             onSearchChange(e.target.value);
         }
         
         const handleCurClick = (currency) => {
-            this.setState({ search: '' });
             handleCurChange(currency);
         }
 
         const onBackClick = () => {
-            this.setState({ search: '' });
             handleBackClick();
         }
         
-        const {tempSelect} = this.props;
+        const { tempSelect, searchText } = this.props;
 
         return (
             <div onKeyDown={onKeyDown}>
                 <div className="searchCur">
-                    <input onChange={handleChange} value={this.state.search} id="searchInput" type="text" placeholder="SEARCH" />
+                    <input onChange={handleChange} value={searchText} id="searchInput" type="text" placeholder="SEARCH" />
                     <img src={Search} alt="search" />
                 </div>
                 <div className="curList">

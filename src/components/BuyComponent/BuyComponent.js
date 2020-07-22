@@ -8,6 +8,9 @@ import IntlTelInput from 'react-intl-tel-input';
 import 'react-intl-tel-input/dist/main.css';
 import Payment from 'payment';
 import * as EmailValidator from 'email-validator';
+import { connect } from 'react-redux';
+import { buyComponentState } from '../../Redux/actions';
+import Checkbox from 'react-checkbox-component';
 
 class BuyComponent extends React.Component {
     constructor(props) {
@@ -21,6 +24,7 @@ class BuyComponent extends React.Component {
             tempSelect: '',
             currencyList: [],
             search: [],
+            searchText: '',
             walletAddress: '',
             email: '',
             country: '',
@@ -30,6 +34,8 @@ class BuyComponent extends React.Component {
             cvc: '',
             name: '',
             selectFor: '',
+            isButtonDisabled: false,
+            isAgreeded: false,
             stage: 1,
             errors: {
                 email: {
@@ -65,14 +71,23 @@ class BuyComponent extends React.Component {
     //         });
     // }
 
-    componentDidMount() {
+    async componentDidMount() {
         this._isMounted = true;
+        
+        // initial state
+        const { prevState } = this.props;
+        await this.setState({
+            curIn: prevState.curIn,
+            selectIn: prevState.selectIn,
+            selectOut: prevState.selectOut
+        });
 
         axios.get(GetCurrencies)
             .then(res =>
             {
                 if (this._isMounted) {
                     this.setState({ currencyList: res.data.result });
+                this.props.onCurrencyChange(res.data.result.filter(cur => cur.short_name === this.state.selectOut)[0].name);
                 }
             });
 
@@ -80,8 +95,10 @@ class BuyComponent extends React.Component {
             .then(res =>
             {
                 if (this._isMounted)
-                    this.setState({ curOut: res.data });
+                    if (res.data !== 0.0)
+                        this.setState({ curOut: res.data });
             });
+        
         document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
         
         // Payment
@@ -97,6 +114,13 @@ class BuyComponent extends React.Component {
 
     componentWillUnmount() {
         this._isMounted = false;
+
+        // When changed type
+        this.props.onChangeType(buyComponentState({
+            curIn: this.state.curIn,
+            selectIn: this.state.selectIn,
+            selectOut: this.state.selectOut
+        }));
     }
 
     render() {
@@ -107,8 +131,9 @@ class BuyComponent extends React.Component {
         }
 
         const handleButtonClickS1 = () => {
-            if (this.state.curIn === '' || this.state.curOut === '' || this.state.curOut === 0)
+            if (this.state.curIn === '' || this.state.curOut === '' || parseFloat(this.state.curOut) === 0)
                 return;
+            
             this.setState(prevState => ({ stage: prevState.stage++ }));
             this.props.navbarShow();
             document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
@@ -125,7 +150,6 @@ class BuyComponent extends React.Component {
                 document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
             }
 
-            
             if (this.state.phoneNumber === '') {
                 errorsPhoneNum.errorText = 'Required field';
                 await this.setState({ errorsPhoneNum });
@@ -143,6 +167,7 @@ class BuyComponent extends React.Component {
                 return;
 
             // check wallet address
+            this.setState({ isButtonDisabled: true });
             var arr = {
                 address: this.state.walletAddress,
                 currency: this.state.selectOut
@@ -152,20 +177,47 @@ class BuyComponent extends React.Component {
 
             if (result === 'not_valid') {
                 errorsAddress.errorText = 'Invalid address';
-                await this.setState({ errorsAddress });
+                await this.setState({ errorsAddress, isButtonDisabled: false });
                 document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
                 return;
             }
 
             document.getElementById("stages").style.height = document.getElementById("stageThree").clientHeight + 'px';
 
-            this.setState(prevState => ({ stage: prevState.stage++ }));
+            this.setState(prevState => ({ stage: prevState.stage++, isButtonDisabled: false }));
         }
 
         const handleButtonClickS3 = () => {
             var errors = this.state.errors;
             if (!errors.isValidCardNumber || !errors.isValidCardDate || !errors.isValidCVC || this.state.name.length === 0)
                 return;
+
+            this.setState(prevState => ({ stage: prevState.stage++ }));
+            document.getElementById("stages").style.height = document.getElementById("stageFour").clientHeight + 'px';
+            // var dataObj = {
+            //     amountOut: "34",
+            //     cnfhash: null,
+            //     couponCode: "",
+            //     fp: "",
+            //     fp2: "",
+            //     fullAddInfo: "{}",
+            //     getParams: "?partner=indacoin",
+            //     partner: "indacoin",
+            //     referer: "https://indacoin.com/payment/en?partner=indacoin",
+            //     socialfp: "",
+            //     transaction_id: 0,
+            //     addInfo: "{\"tag\":null,\"cryptoAddress\":\"1FeGgKxU5gjC562wZXd67VTVfwcSjpqv3Y\",\"userId\":\"dcsa@mail.ru\",\"email\":null,\"cur_from\":\"USD\",\"cur_to\":\"INTT\",\"ymId\":\"1592331596708493231\",\"send.amount\":\"100\"}",
+            //     cashinAddInfo: "{\"full_name\":\"cdasc ddcas\",\"cardholder_name\":\"cdasc ddcas\",\"card_data\":\"{\"card\":\"4111 1111 1111 1111\",\"expiryDate\":\"12 / 40\",\"cvc\":\"123\"}\",\"ksid\":\"L!946f24fa-f8bf-0a31-2aeb-baf84d349e15_2\",\"phone\":\"998911234567\",\"bday\":\"2000-10-10\"}"
+            // };
+
+            // axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+            // axios.defaults.headers.common['referer'] = 'https://indacoin.com/payment/en?partner=indacoin';
+            // axios.post("https://indacoin.com/gw/payment_form.aspx/registerChangeV1_1", dataObj)
+            //      .then(res => console.log(res));
+        }
+
+        const handleButtonClickS4 = () => {
+
         }
 
         const handleCurInput = async (e) => {
@@ -202,7 +254,12 @@ class BuyComponent extends React.Component {
         const handleCurChange = async (currency) => {
             document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
             this.props.navbarShow();
-            await this.setState({ stage: 1, [this.state.selectFor]: currency });
+            await this.setState({ stage: 1, [this.state.selectFor]: currency, searchText: '' });
+            if (this.state.selectFor === 'selectOut') {
+                var curFullName = selectOutCurrencies.filter(cur => cur.short_name === currency)[0].name;
+                this.props.onCurrencyChange(curFullName);
+            }
+
             const convertFrom = this.state.selectIn;
             const convertTo = this.state.selectOut;
             const amount = this.state.curIn;
@@ -227,8 +284,16 @@ class BuyComponent extends React.Component {
 
         const handleBackClick = () => {
             this.props.navbarShow();
-            this.setState({ stage: 1 });
+            this.setState({ stage: 1, searchText: '' });
             document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
+        }
+
+        const handleBackButtonClick = async () => {
+            if (this.state.stage === 2)
+                this.props.navbarShow();
+            await this.setState(prevState => ({ stage: prevState.stage-- }));
+            var stage = this.state.stage === 1 ? 'stageOne' : 'stageTwo';
+            document.getElementById("stages").style.height = document.getElementById(stage).clientHeight + 'px';
         }
 
         const keyDown = async (event) => {
@@ -405,7 +470,18 @@ class BuyComponent extends React.Component {
         const handleSearchChange = (search) => {
             var currencies = this.state.selectFor === 'selectIn' ? selectInCurrencies : selectOutCurrencies;
             const filteredList = currencies.filter(cur => cur.short_name.toLowerCase().indexOf(search.toLowerCase()) !== -1);
-            this.setState({ tempSelect: filteredList[0].short_name, search: filteredList });
+            if (filteredList.length === 0)
+                this.setState({ search: filteredList, searchText: search });
+            else
+                this.setState({ tempSelect: filteredList[0].short_name, search: filteredList, searchText: search });
+        }
+
+        const handleCheckboxChange = (checked) => {
+            this.setState({ isAgreeded: checked });
+        }
+
+        const handleCheckboxLabelClick = () => {
+            this.setState(prevState => ({ isAgreeded: !prevState.isAgreeded }));
         }
 
         const selectInCurrencies = this.state.currencyList.filter(cur => !cur.withdrawEnabled);
@@ -438,7 +514,7 @@ class BuyComponent extends React.Component {
                         <span className="details">This pair is temporarily unavailable or amount is too small</span>
                     }
 
-                    <button onClick={handleButtonClickS1}>Continue</button>
+                    <button className="mainButton" onClick={handleButtonClickS1}>Continue</button>
                 </div>
 
                 <div id="stageTwo" className={`form ${this.state.stage === 2 ? "center" : this.state.stage === 1 ? "right" : "left"}`}>
@@ -460,10 +536,11 @@ class BuyComponent extends React.Component {
                         <span className="details">{this.state.errors.phoneNumber.errorText}</span>
                     </div>
 
-                    <button onClick={handleButtonClickS2}>Continue</button>
+                    <button className="backButton" onClick={handleBackButtonClick}>Back</button>
+                    <button disabled={this.state.isButtonDisabled} onClick={handleButtonClickS2}>Continue</button>
                 </div>
 
-                <div id="stageThree" className={`form ${this.state.stage === 3 ? "center" : "right"}`}>
+                <div id="stageThree" className={`form ${this.state.stage === 3 ? "center" : this.state.stage === 2 ? "right" : "left"}`}>
                     <input className={`${this.state.errors.isValidCardNumber ? "" : "notValidInput"}`} placeholder="ENTER CARD NUMBER" name="cardNumber" id="cardNumber" type="text" onChange={handleCardNumberChange} />
                     <div className="cardInfo">
                         <input className={`${this.state.errors.isValidCardDate ? "" : "notValidInput"}`} placeholder="MM/YY" name="cardDate" id="cardDate" type="text" onChange={handleCardDateChange} />
@@ -471,18 +548,36 @@ class BuyComponent extends React.Component {
                     </div>
                     <input placeholder="NAME" name="name" id="cardName" type="text" onChange={handleChange} />
                     
-                    <button onClick={handleButtonClickS3}>Buy</button>
+                    <button className="backButton" onClick={handleBackButtonClick}>Back</button>
+                    <button onClick={handleButtonClickS3}>Continue</button>
+                </div>
+
+                <div id="stageFour" className={`form ${this.state.stage === 4 ? "center" : "right"}`}>
+                    <div>
+                        <Checkbox size="big" color="blue" shape="square" isChecked={this.state.isAgreeded} onChange={handleCheckboxChange} />
+                        <span className="checkboxLabel" onClick={handleCheckboxLabelClick}>I accept the terms of the user agreement</span>
+                    </div>
+
+                    <button className="mainButton" onClick={handleButtonClickS4}>Buy</button>
                 </div>
 
                 <div id="stageSelect" className={`form selectCur ${this.state.stage === 'selectCur' ? "centerCur" : "right"}`}>
-                    <SelectComponent handleCurChange={handleCurChange} onKeyDown={keyDown}
+                    <SelectComponent handleCurChange={handleCurChange} onKeyDown={keyDown} searchText={this.state.searchText}
                         mouserOver={mouseOverEvent} tempSelect={this.state.tempSelect} onSearchChange={handleSearchChange}
-                        handleBackClick={handleBackClick} currencyList={this.state.search} 
+                        handleBackClick={handleBackClick} currencyList={this.state.search}
                     />
                 </div>
             </div>
         );
     }
 }
+
+const mapStateToProps = state => {
+    return {
+        prevState: state.buyComponent
+    }
+}
+
+BuyComponent = connect(mapStateToProps)(BuyComponent);
 
 export default BuyComponent;
