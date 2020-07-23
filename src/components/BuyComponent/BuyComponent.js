@@ -36,6 +36,8 @@ class BuyComponent extends React.Component {
             selectFor: '',
             isButtonDisabled: false,
             isAgreeded: false,
+            hasTag: false,
+            tag: '',
             stage: 1,
             errors: {
                 email: {
@@ -99,7 +101,7 @@ class BuyComponent extends React.Component {
                         this.setState({ curOut: res.data });
             });
         
-        document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
+        // document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
         
         // Payment
         var 
@@ -110,6 +112,8 @@ class BuyComponent extends React.Component {
         Payment.formatCardNumber(number, 16);
         Payment.formatCardExpiry(exp);
         Payment.formatCardCVC(cvc);
+
+        document.getElementsByClassName('checkbox')[0].setAttribute('type', 'button');
     }
 
     componentWillUnmount() {
@@ -123,101 +127,146 @@ class BuyComponent extends React.Component {
         }));
     }
 
+    async handleButtonClickS1(e) {
+        e.preventDefault();
+        if (this.state.stage !== 1)
+            return;
+        
+        if (this.state.curIn === '' || this.state.curOut === '' || parseFloat(this.state.curOut) === 0)
+            return;
+        
+        await this.setState(prevState => ({ stage: prevState.stage++ }));
+        document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
+        this.props.navbarShow();
+    }
+
+    async handleButtonClickS2(e) {
+        e.preventDefault();
+        if (this.state.stage !== 2)
+            return;
+        
+        let errorsEmail = this.state.errors.email;
+        let errorsAddress = this.state.errors.walletAddress;
+        let errorsPhoneNum = this.state.errors.phoneNumber;
+        
+        if (!errorsEmail.isValid) {
+            errorsEmail.errorText = 'Incorrect email';
+            await this.setState({ errorsEmail });
+            document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
+        }
+
+        if (!errorsPhoneNum.isValid) {
+            errorsPhoneNum.errorText = 'Invalid phone number';
+            await this.setState({ errorsPhoneNum });
+            document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
+        }
+
+        if (this.state.email === '') {
+            errorsEmail.errorText = 'Required field';
+            await this.setState({ errorsEmail });
+            document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
+        }
+
+        if (this.state.phoneNumber === '') {
+            errorsPhoneNum.errorText = 'Required field';
+            await this.setState({ errorsPhoneNum });
+            document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
+        }
+
+        if (this.state.walletAddress === '') {
+            errorsAddress.errorText = 'Required field';
+            await this.setState({ errorsAddress });
+            document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
+            return;
+        }
+
+        if (!errorsEmail.isValid || !errorsPhoneNum.isValid)
+            return;
+
+        // check wallet address
+        this.setState({ isButtonDisabled: true });
+        var arr = {
+            address: this.state.walletAddress,
+            currency: this.state.selectOut
+        };
+        var result = await axios.post(CheckAddress, arr)
+             .then(res => res.data.result);
+
+        if (result === 'not_valid') {
+            errorsAddress.errorText = 'Invalid address';
+            await this.setState({ errorsAddress, isButtonDisabled: false });
+            document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
+            return;
+        }
+
+        this.setState(prevState => ({ stage: prevState.stage++, isButtonDisabled: false }));
+        document.getElementById("stages").style.height = document.getElementById("stageThree").clientHeight + 'px';
+    }
+
+    handleButtonClickS3(e) {
+        e.preventDefault();
+        var errors = this.state.errors;
+        if (!errors.isValidCardNumber || !errors.isValidCardDate || !errors.isValidCVC || this.state.name.length === 0)
+            return;
+        
+        // const {
+        //     curIn,
+        //     curOut,
+        //     selectIn,
+        //     selectOut,
+        //     walletAddress,
+        //     email,
+        //     country,
+        //     phoneNumber,
+        //     cardNumber,
+        //     cardDate,
+        //     cvc,
+        //     name,
+        // } = this.state;
+
+        // let dataObj = {
+        //     amountOut: curIn,
+        //     cnfhash: null,
+        //     couponCode: "",
+        //     fp: "",
+        //     fp2: "",
+        //     fullAddInfo: "{}",
+        //     socialfp: "",
+        //     referer: window.location.href,
+        //     getParams: window.location.search || null,
+        //     partner: new URL(window.location).searchParams.get('partner'),
+        //     transaction_id: 0,
+        //     cashinAddInfo: {
+        //         full_name: name,
+        //         cardholder_name: value_fullNameCard,
+        //         card_data: JSON.stringify({
+        //             card: cardNumber,
+        //             expiryDate: cardDate,
+        //             cvc: cvc
+        //         })
+        //         // ksid: ksClientID,
+        //     },
+        //     addInfo: {}
+        //     // addInfo: "{\"tag\":null,\"cryptoAddress\":\"1FeGgKxU5gjC562wZXd67VTVfwcSjpqv3Y\",\"userId\":\"dcsa@mail.ru\",\"email\":null,\"cur_from\":\"USD\",\"cur_to\":\"INTT\",\"ymId\":\"1592331596708493231\",\"send.amount\":\"100\"}",
+        //     // cashinAddInfo: "{\"full_name\":\"cdasc ddcas\",\"cardholder_name\":\"cdasc ddcas\",\"card_data\":\"{\"card\":\"4111 1111 1111 1111\",\"expiryDate\":\"12 / 40\",\"cvc\":\"123\"}\",\"ksid\":\"L!946f24fa-f8bf-0a31-2aeb-baf84d349e15_2\",\"phone\":\"998911234567\",\"bday\":\"2000-10-10\"}"
+        // };
+
+        // delete window.document.referrer;
+        // window.document.__defineGetter__('referrer', function () {
+        //     return "https://indacoin.com/payment/en?partner=indacoin";
+        // });
+
+        // axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
+        // // axios.defaults.headers.common['referer'] = 'https://indacoin.com/payment/en?partner=indacoin';
+        // axios.post("https://indacoin.com/gw/payment_form.aspx/registerChangeV1_1", dataObj)
+        //      .then(res => console.log(res));
+    }
+
     render() {
         const handleChange = (e) => {
             this.setState({
                 [e.target.name]: e.target.value
             });
-        }
-
-        const handleButtonClickS1 = () => {
-            if (this.state.curIn === '' || this.state.curOut === '' || parseFloat(this.state.curOut) === 0)
-                return;
-            
-            this.setState(prevState => ({ stage: prevState.stage++ }));
-            this.props.navbarShow();
-            document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
-        }
-
-        const handleButtonClickS2 = async () => {
-            let errorsEmail = this.state.errors.email;
-            let errorsAddress = this.state.errors.walletAddress;
-            let errorsPhoneNum = this.state.errors.phoneNumber;
-            
-            if (this.state.email === '') {
-                errorsEmail.errorText = 'Required field';
-                await this.setState({ errorsEmail });
-                document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
-            }
-
-            if (this.state.phoneNumber === '') {
-                errorsPhoneNum.errorText = 'Required field';
-                await this.setState({ errorsPhoneNum });
-                document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
-            }
-
-            if (this.state.walletAddress === '') {
-                errorsAddress.errorText = 'Required field';
-                await this.setState({ errorsAddress });
-                document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
-                return;
-            }
-
-            if (!errorsEmail.isValid || !errorsPhoneNum.isValid)
-                return;
-
-            // check wallet address
-            this.setState({ isButtonDisabled: true });
-            var arr = {
-                address: this.state.walletAddress,
-                currency: this.state.selectOut
-            };
-            var result = await axios.post(CheckAddress, arr)
-                 .then(res => res.data.result);
-
-            if (result === 'not_valid') {
-                errorsAddress.errorText = 'Invalid address';
-                await this.setState({ errorsAddress, isButtonDisabled: false });
-                document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
-                return;
-            }
-
-            document.getElementById("stages").style.height = document.getElementById("stageThree").clientHeight + 'px';
-
-            this.setState(prevState => ({ stage: prevState.stage++, isButtonDisabled: false }));
-        }
-
-        const handleButtonClickS3 = () => {
-            var errors = this.state.errors;
-            if (!errors.isValidCardNumber || !errors.isValidCardDate || !errors.isValidCVC || this.state.name.length === 0)
-                return;
-
-            this.setState(prevState => ({ stage: prevState.stage++ }));
-            document.getElementById("stages").style.height = document.getElementById("stageFour").clientHeight + 'px';
-            // var dataObj = {
-            //     amountOut: "34",
-            //     cnfhash: null,
-            //     couponCode: "",
-            //     fp: "",
-            //     fp2: "",
-            //     fullAddInfo: "{}",
-            //     getParams: "?partner=indacoin",
-            //     partner: "indacoin",
-            //     referer: "https://indacoin.com/payment/en?partner=indacoin",
-            //     socialfp: "",
-            //     transaction_id: 0,
-            //     addInfo: "{\"tag\":null,\"cryptoAddress\":\"1FeGgKxU5gjC562wZXd67VTVfwcSjpqv3Y\",\"userId\":\"dcsa@mail.ru\",\"email\":null,\"cur_from\":\"USD\",\"cur_to\":\"INTT\",\"ymId\":\"1592331596708493231\",\"send.amount\":\"100\"}",
-            //     cashinAddInfo: "{\"full_name\":\"cdasc ddcas\",\"cardholder_name\":\"cdasc ddcas\",\"card_data\":\"{\"card\":\"4111 1111 1111 1111\",\"expiryDate\":\"12 / 40\",\"cvc\":\"123\"}\",\"ksid\":\"L!946f24fa-f8bf-0a31-2aeb-baf84d349e15_2\",\"phone\":\"998911234567\",\"bday\":\"2000-10-10\"}"
-            // };
-
-            // axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
-            // axios.defaults.headers.common['referer'] = 'https://indacoin.com/payment/en?partner=indacoin';
-            // axios.post("https://indacoin.com/gw/payment_form.aspx/registerChangeV1_1", dataObj)
-            //      .then(res => console.log(res));
-        }
-
-        const handleButtonClickS4 = () => {
-
         }
 
         const handleCurInput = async (e) => {
@@ -243,6 +292,8 @@ class BuyComponent extends React.Component {
                     }
                     else
                     {
+                        if (InputName === 'curIn')
+                            res.data = res.data.toFixed(2);
                         await this.setState({
                             [InputName]: res.data
                         })
@@ -251,11 +302,14 @@ class BuyComponent extends React.Component {
                 });
         }
 
-        const handleCurChange = async (currency) => {
-            document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
+        const handleCurChange = async (currency, tag) => {
             this.props.navbarShow();
             await this.setState({ stage: 1, [this.state.selectFor]: currency, searchText: '' });
+            
             if (this.state.selectFor === 'selectOut') {
+                await this.setState({ hasTag: tag });
+                if (tag === false)
+                    await this.setState({ tag: '' });
                 var curFullName = selectOutCurrencies.filter(cur => cur.short_name === currency)[0].name;
                 this.props.onCurrencyChange(curFullName);
             }
@@ -285,15 +339,26 @@ class BuyComponent extends React.Component {
         const handleBackClick = () => {
             this.props.navbarShow();
             this.setState({ stage: 1, searchText: '' });
-            document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
+            // document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
         }
 
         const handleBackButtonClick = async () => {
-            if (this.state.stage === 2)
+            if (this.state.stage === 2) {
+                let errorsEmail = this.state.errors.email;
+                let errorsAddress = this.state.errors.walletAddress;
+                let errorsPhoneNum = this.state.errors.phoneNumber;
+                errorsEmail.errorText = '';
+                errorsAddress.errorText = '';
+                errorsPhoneNum.errorText = '';
+                this.setState({ errorsEmail, errorsAddress, errorsPhoneNum });
                 this.props.navbarShow();
+                // document.getElementById("stages").style.height = this.state.hasTag ? document.getElementById('stageOne').clientHeight + 'px' : '276px';
+                document.getElementById("stages").style.height = document.getElementById("stageOne").clientHeight + 'px';
+            }
+            else if (this.state.stage === 3)
+                document.getElementById("stages").style.height = document.getElementById("stageTwo").clientHeight + 'px';
+            
             await this.setState(prevState => ({ stage: prevState.stage-- }));
-            var stage = this.state.stage === 1 ? 'stageOne' : 'stageTwo';
-            document.getElementById("stages").style.height = document.getElementById(stage).clientHeight + 'px';
         }
 
         const keyDown = async (event) => {
@@ -480,85 +545,102 @@ class BuyComponent extends React.Component {
             this.setState({ isAgreeded: checked });
         }
 
-        const handleCheckboxLabelClick = () => {
-            this.setState(prevState => ({ isAgreeded: !prevState.isAgreeded }));
+        const handleCheckboxLabelClick = (e) => {
+            if (e.target.getAttribute('name') === 'checkboxLabel')
+                this.setState(prevState => ({ isAgreeded: !prevState.isAgreeded }));
+        }
+
+        const onValueInputKeyPress = (event) => {
+            const charCode = (event.which) ? event.which : event.keyCode;
+
+            if (charCode !== 46 && charCode > 31 && (charCode < 48 || charCode > 57)) {
+                event.preventDefault();
+                return false;
+            }
+
+            return true;
         }
 
         const selectInCurrencies = this.state.currencyList.filter(cur => !cur.withdrawEnabled);
         const selectOutCurrencies = this.state.currencyList.filter(cur => cur.withdrawEnabled);
 
         return (
-            <div id="stages">
+            <div id="stages" style={{ height: '276px' }}>
                 <div id="stageOne" className={`form ${this.state.stage === 1 ? "center" : "left"}`}>
-                    <div className="currencies">
-                        <input placeholder="YOU GIVE" type="number" value={this.state.curIn} name="curIn" onChange={handleCurInput} />
-                        <div onClick={() => {
-                                this.setState({stage: 'selectCur', selectFor: 'selectIn', tempSelect: selectInCurrencies[0].short_name, search: selectInCurrencies});
-                                this.props.navbarShow();
-                                document.getElementById("stages").style.height = document.getElementById("stageSelect").clientHeight + 'px';
-                            }}>
-                            {this.state.selectIn}
+                    <form onSubmit={this.handleButtonClickS1.bind(this)}>
+                        <div className="currencies">
+                            <input placeholder="YOU GIVE" type="text" value={this.state.curIn} name="curIn" onKeyPress={onValueInputKeyPress} onChange={handleCurInput} />
+                            <div onClick={() => {
+                                    this.setState({stage: 'selectCur', selectFor: 'selectIn', tempSelect: selectInCurrencies[0].short_name, search: selectInCurrencies});
+                                    this.props.navbarShow();
+                                    // document.getElementById("stages").style.height = document.getElementById("stageSelect").clientHeight + 'px';
+                                }}>
+                                {this.state.selectIn}
+                            </div>
                         </div>
-                    </div>
-                    <div className="currencies">
-                        <input placeholder="YOU GET" type="number" value={this.state.curOut} name="curOut" onChange={handleCurInput} />
-                        <div onClick={() => {
-                                this.setState({stage: 'selectCur', selectFor: 'selectOut', tempSelect: selectOutCurrencies[0].short_name, search: selectOutCurrencies});
-                                this.props.navbarShow();
-                                document.getElementById("stages").style.height = document.getElementById("stageSelect").clientHeight + 'px';
-                            }}>
-                            {this.state.selectOut}
+                        <div className="currencies">
+                            <input placeholder="YOU GET" type="text" value={this.state.curOut} name="curOut" onKeyPress={onValueInputKeyPress} onChange={handleCurInput} />
+                            <div onClick={() => {
+                                    this.setState({stage: 'selectCur', selectFor: 'selectOut', tempSelect: selectOutCurrencies[0].short_name, search: selectOutCurrencies});
+                                    this.props.navbarShow();
+                                    // document.getElementById("stages").style.height = document.getElementById("stageSelect").clientHeight + 'px';
+                                }}>
+                                {this.state.selectOut}
+                            </div>
                         </div>
-                    </div>
-                    {this.state.curOut === '' && 
-                        <span className="details">This pair is temporarily unavailable or amount is too small</span>
-                    }
+                        {this.state.curOut === '' && 
+                            <span className="details">This pair is temporarily unavailable or amount is too small</span>
+                        }
 
-                    <button className="mainButton" onClick={handleButtonClickS1}>Continue</button>
+                        <div>
+                            <Checkbox size="big" color="blue" shape="square" isChecked={this.state.isAgreeded} onChange={handleCheckboxChange} />
+                            <span className="checkboxLabel" name="checkboxLabel" onClick={(e) =>handleCheckboxLabelClick(e)}>I accept the <a href="https://indacoin.com/terms">terms</a> of the <a href="https://indacoin.com/terms">user agreement</a></span>
+                        </div>
+
+                        <button style={{ marginTop: '38px' }} disabled={!this.state.isAgreeded} className="mainButton" type="submit">Continue</button>
+                    </form>
                 </div>
 
-                <div id="stageTwo" className={`form ${this.state.stage === 2 ? "center" : this.state.stage === 1 ? "right" : "left"}`}>
-                    <input placeholder="CRYPTO WALLET ADDRESS" name="walletAddress" type="text" onChange={handleAddressInput} />
-                    <span className="details">{this.state.errors.walletAddress.errorText}</span>
-                    <input placeholder="EMAIL" name="email" type="text" onChange={handleEmailInput} />
-                    <span className="details">{this.state.errors.email.errorText}</span>
-                    <div style={{ marginTop: "8px" }}>
-                        {/* <select name="country" onChange={handleChange}>
-                            <option>RU</option>
-                            <option>EN</option>
-                        </select>
-                        <input placeholder="PHONE NUMBER" name="phoneNumber" type="text" onChange={handleChange} /> */}
-                        <IntlTelInput
-                            containerClassName="intlTelContainer intl-tel-input"
-                            placeholder="PHONE NUMBER"
-                            onPhoneNumberChange={handlePhoneNumberChange}
-                        />
-                        <span className="details">{this.state.errors.phoneNumber.errorText}</span>
-                    </div>
+                <div id="stageTwo" className={`form ${this.state.stage === 2 ? "center" : this.state.stage === 1 || this.state.stage === 'selectCur' ? "right" : "left"}`}>
+                    <form onSubmit={this.handleButtonClickS2.bind(this)}>
+                        <input placeholder="CRYPTO WALLET ADDRESS" name="walletAddress" type="text" onChange={handleAddressInput} />
+                        <span className="details">{this.state.errors.walletAddress.errorText}</span>
+                        {this.state.hasTag && 
+                            <input placeholder="TAG" name="tag" type="text" value={this.state.tag} onChange={handleChange} />
+                        }
+                        <input placeholder="EMAIL" name="email" type="text" onChange={handleEmailInput} />
+                        <span className="details">{this.state.errors.email.errorText}</span>
+                        <div style={{ marginTop: "8px" }}>
+                            {/* <select name="country" onChange={handleChange}>
+                                <option>RU</option>
+                                <option>EN</option>
+                            </select>
+                            <input placeholder="PHONE NUMBER" name="phoneNumber" type="text" onChange={handleChange} /> */}
+                            <IntlTelInput
+                                containerClassName="intlTelContainer intl-tel-input"
+                                placeholder="PHONE NUMBER"
+                                onPhoneNumberChange={handlePhoneNumberChange}
+                            />
+                            <span className="details">{this.state.errors.phoneNumber.errorText}</span>
+                        </div>
 
-                    <button className="backButton" onClick={handleBackButtonClick}>Back</button>
-                    <button disabled={this.state.isButtonDisabled} onClick={handleButtonClickS2}>Continue</button>
+                        <button className="backButton" type="button" onClick={handleBackButtonClick}>Back</button>
+                        <button disabled={this.state.isButtonDisabled} type="submit">Continue</button>
+                    </form>
                 </div>
 
-                <div id="stageThree" className={`form ${this.state.stage === 3 ? "center" : this.state.stage === 2 ? "right" : "left"}`}>
-                    <input className={`${this.state.errors.isValidCardNumber ? "" : "notValidInput"}`} placeholder="ENTER CARD NUMBER" name="cardNumber" id="cardNumber" type="text" onChange={handleCardNumberChange} />
-                    <div className="cardInfo">
-                        <input className={`${this.state.errors.isValidCardDate ? "" : "notValidInput"}`} placeholder="MM/YY" name="cardDate" id="cardDate" type="text" onChange={handleCardDateChange} />
-                        <input className={`${this.state.errors.isValidCVC ? "" : "notValidInput"}`} placeholder="CVC" name="cvc" id="cvc" type="text" onChange={handleCVCChange} />
-                    </div>
-                    <input placeholder="NAME" name="name" id="cardName" type="text" onChange={handleChange} />
-                    
-                    <button className="backButton" onClick={handleBackButtonClick}>Back</button>
-                    <button onClick={handleButtonClickS3}>Continue</button>
-                </div>
-
-                <div id="stageFour" className={`form ${this.state.stage === 4 ? "center" : "right"}`}>
-                    <div>
-                        <Checkbox size="big" color="blue" shape="square" isChecked={this.state.isAgreeded} onChange={handleCheckboxChange} />
-                        <span className="checkboxLabel" onClick={handleCheckboxLabelClick}>I accept the terms of the user agreement</span>
-                    </div>
-
-                    <button className="mainButton" onClick={handleButtonClickS4}>Buy</button>
+                <div id="stageThree" className={`form ${this.state.stage === 3 ? "center" : "right"}`}>
+                    <form onSubmit={this.handleButtonClickS3.bind(this)}>
+                        <input className={`${this.state.errors.isValidCardNumber ? "" : "notValidInput"}`} placeholder="ENTER CARD NUMBER" name="cardNumber" id="cardNumber" type="text" onChange={handleCardNumberChange} />
+                        <div className="cardInfo">
+                            <input className={`${this.state.errors.isValidCardDate ? "" : "notValidInput"}`} placeholder="MM/YY" name="cardDate" id="cardDate" type="text" onChange={handleCardDateChange} />
+                            <input className={`${this.state.errors.isValidCVC ? "" : "notValidInput"}`} placeholder="CVC" name="cvc" id="cvc" type="text" onChange={handleCVCChange} />
+                        </div>
+                        <input style={{ marginBottom: '0' }} placeholder="NAME" name="name" id="cardName" type="text" onChange={handleChange} />
+                        
+                        <button className="backButton" type="button" onClick={handleBackButtonClick}>Back</button>
+                        <button type="submit">Continue</button>
+                    </form>
                 </div>
 
                 <div id="stageSelect" className={`form selectCur ${this.state.stage === 'selectCur' ? "centerCur" : "right"}`}>

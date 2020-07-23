@@ -147,7 +147,7 @@
 .currencies {
     display: flex;
     width: 100%;
-    margin: 0 auto 8px auto;
+    margin: 8px auto 16px auto;
     padding: 3px 4px;
     background-color: #F7F9FA;
     border-radius: 4px;
@@ -160,8 +160,8 @@
 
 .card-body input {
     width: 100%;
-    padding: 20px 30px;
-    margin: 10px auto;
+    padding: 15px 30px;
+    margin: 8px auto;
     border: 0px solid;
     background-color: #F7F9FA;
     border-radius: 4px;
@@ -280,7 +280,7 @@
 }
 
 .cardInfo {
-    margin: 0 auto;
+    margin: 8px auto;
 }
 
 .cardInfo input {
@@ -290,6 +290,7 @@
 
 .form {
     width: 100%;
+    /* height: 300px; */
     position: absolute;
     transition: 0.2s all linear;
     padding: 16px;
@@ -332,7 +333,7 @@
 }
 
 .curList {
-    height: 140px;
+    height: 148px;
     overflow-y: auto;
     font-family: Gilroy-Medium;
     font-style: normal;
@@ -412,6 +413,16 @@ button.checkbox {
     font-family: Gilroy-Medium;
     font-style: normal;
     cursor: pointer;
+    user-select: none;
+}
+
+.checkboxLabel a {
+    color: rgb(52, 100, 248);
+    text-decoration: none;
+}
+
+.checkboxLabel a:hover {
+    text-decoration: underline;
 }
 
 @media only screen and (max-width: 500px) {

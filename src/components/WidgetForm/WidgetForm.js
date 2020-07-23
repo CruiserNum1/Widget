@@ -18,13 +18,13 @@ class WidgetForm extends React.Component {
     render() {
         const onChangeIsShow = async () => {
             this.props.handleIsShow();
-            await this.setState({ type: "Exchange" });
-            await this.setState({ type: 'Buy', navbarShow: true });
+            // await this.setState({ type: "Exchange" });
+            // await this.setState({ type: 'Buy', navbarShow: true });
         }
 
-        const handleTypeChange = (type) => {
-            this.setState({ type: type });
-        }
+        // const handleTypeChange = (type) => {
+        //     this.setState({ type: type });
+        // }
 
         const handleNavbarShow = () => {
             this.setState(prevState => ({ navbarShow: !prevState.navbarShow }));
@@ -63,7 +63,7 @@ class WidgetForm extends React.Component {
                     <span className="header-text">{text}<br /><span style={{ color: "#6B6B6B", fontWeight: "600", fontFamily: "Gilroy-Bold" }}>In partnership with Name company</span></span>
                 </div>
                 <div className="card-body">
-                    {this.state.navbarShow && 
+                    {/* {this.state.navbarShow && 
                         <div className="navbar">
                             <ul>
                                 <li className={this.state.type === 'Buy' ? "active" : ""} onClick={() => handleTypeChange('Buy')}>BUY</li>
@@ -71,7 +71,7 @@ class WidgetForm extends React.Component {
                                 <li className={this.state.type === 'Exchange' ? "active" : ""} onClick={() => handleTypeChange('Exchange')}>EXCHANGE</li>
                             </ul>
                         </div>
-                    }
+                    } */}
                     
                     {this.state.type === 'Buy' ?
                         <BuyComponent navbarShow={handleNavbarShow} onCurrencyChange={handleCurrencyChange} onChangeType={handleChangeType} /> :

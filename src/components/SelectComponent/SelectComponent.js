@@ -9,8 +9,8 @@ class SelectComponent extends React.Component {
             onSearchChange(e.target.value);
         }
         
-        const handleCurClick = (currency) => {
-            handleCurChange(currency);
+        const handleCurClick = (currency, tag) => {
+            handleCurChange(currency, tag);
         }
 
         const onBackClick = () => {
@@ -29,7 +29,7 @@ class SelectComponent extends React.Component {
                     <ul>
                         {currencyList.map((cur, index) => 
                             <li className={`${cur.short_name === tempSelect ? 'highlight' : ''}`} key={cur.short_name}
-                                onClick={() => handleCurClick(cur.short_name)} onMouseOver={mouserOver}>
+                                onClick={() => handleCurClick(cur.short_name, cur.tag)} onMouseOver={mouserOver}>
                                 {cur.short_name}
                             </li>
                         )}
